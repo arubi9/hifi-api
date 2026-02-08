@@ -1,13 +1,34 @@
 services:
-  web:
+  # Interactive TUI mode (default)
+  # Usage: docker compose run --rm tui
+  tui:
     build: .
+    command: tui
+    env_file:
+      - .env
+    volumes:
+      - ./token.json:/app/token.json:ro
+    stdin_open: true
+    tty: true
+
+  # API-only mode (headless server)
+  # Usage: docker compose up api
+  api:
+    build: .
+    command: api
     env_file:
       - .env
     ports:
-      - "0.0.0.0:8000:8000"
+      - "${HOST_PORT:-8000}:8000"
     volumes:
       - ./token.json:/app/token.json:ro
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
 
 networks:
   default:
